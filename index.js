@@ -3,23 +3,62 @@ var util = require('util')
   , express = require('express')
   , path = require('path');
   
-function Express(name, options) {
+function ExpressEJS(name, options) {
   Resource.apply(this, arguments);
   var app = this.app = express()
     , exp = this;
   
   // handle all routes
   this.path = '/';
-  
-  app.set('views', path.join(path.resolve('.'), options.configPath, 'views'));
+
+    var ejs = require('ejs');
+    ejs.open = '{{';
+    ejs.close = '}}';
+
+    var oneDay = 86400000;
+    app.use(express.compress());
+
+    app.configure(function(){
+        app.set("view options", {layout: false});
+        app.engine('html', require('ejs').renderFile);
+        app.set('view engine', 'html');
+        app.set('views', __dirname + "/../../public/");
+    });
+
+    app.all("*", function(req, res, next)
+    {
+
+        var request = req.params[0];
+
+        if((request.substr(0, 1) === "/")&&(request.substr(request.length - 4) === "html"))
+        {
+            request = request.substr(1);
+            res.render(request);
+        }
+        else if (request == "/" || request == "")
+        {
+
+            res.render("index.html");
+
+        }
+        else
+        {
+
+            res.sendfile(path.resolve(__dirname + "/../../public/" + request));
+        }
+
+    });
+
+    app.use(express.static(__dirname + '../../public', { maxAge: oneDay }));
+
 }
 
-Express.events = ['init'];
+ExpressEJS.events = ['init'];
 
-util.inherits(Express, Resource);
-module.exports = Express;
+util.inherits(ExpressEJS, Resource);
+module.exports = ExpressEJS;
 
-Express.prototype.handle = function (ctx, next) {
+ExpressEJS.prototype.handle = function (ctx, next) {
   ctx.req.dpd = ctx.dpd;
   ctx.req.me = ctx.session && ctx.session.user;
   this.app.call(this.server, ctx.req, ctx.res);
@@ -28,7 +67,7 @@ Express.prototype.handle = function (ctx, next) {
   }
 }
 
-Express.prototype.load = function (fn) {
+ExpressEJS.prototype.load = function (fn) {
   var e = this;
   Resource.prototype.load.call(this, function () {
     if(e.events && e.events.init) {

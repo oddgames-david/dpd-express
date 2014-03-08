@@ -1,6 +1,6 @@
-# dpd-express
+# dpd-express-ejs
 
-use express as a dpd resource
+use express as a dpd resource, ads the ability to use server side templating.
 
 ## install
 
